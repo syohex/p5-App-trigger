@@ -1,0 +1,101 @@
+#!perl
+use strict;
+use warnings;
+
+use lib qw(../lib);
+
+use App::trigger;
+
+my $app = App::trigger->new;
+$app->parse_options(@ARGV);
+$app->run;
+
+__END__
+
+=encoding utf-8
+
+=head1 NAME
+
+ptrigger - trigger action by reading file or standard input
+
+=head1 SYNOPSIS
+
+    % ptrigger --config=myptrigger --tail some_app.log
+
+    % some_app 2>&1 | ptrigger --tail # read from STDIN
+
+=head1 DESCRIPTION
+
+This command parses input and triggers the actions.
+
+=head1 OPTIONS
+
+You can specify the following options
+
+=over 4
+
+=item -c, --config
+
+Specify configuration file.
+
+=item -t, --tail
+
+Behave like B<tail -f>.
+
+=item -h, --help
+
+Display the help message.
+
+=back
+
+=head1 Configuration File
+
+The configuration file is just a perl file. You can specify it
+with -c, or --config command line option.
+If you omit -c, or --config option, C<ptrigger> use C<~/.ptrigger>.
+
+It should return HashRef. Value of Hash should be HashRef too.
+It should has C<regexp> mandatory parameter and
+it can have C<color> and C<action> optional parameters.
+
+C<regexp> parameter should be string or reference of C<Regexp>.
+
+C<color> paramter should be string or C<ArrayRef>.
+C<color> parameter is passed C<Term::ANSIColor::color> function,
+so you can set this parameter same as C<Term::ANSIColor>.
+
+C<action> parameter should be C<CodeRef> or string.
+If you set string to C<action> parameter, C<ptrigger> execute it
+as command with C<exec> function.
+
+For example:
+
+    +{
+        Error => {
+            regexp => qr/[\w:]Error/,
+            color  => ['yellow', 'bold'],
+            action => "notify-send Error Trouble"
+        },
+
+        'Server Error' => {
+            regexp => qr/Internal Server Error/,
+            action => sub {
+                ....
+            };
+        },
+    };
+
+=head1 AUTHOR
+
+Syohei YOSHIDA E<lt>syohex@gmail.comE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2012- Syohei YOSHIDA
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
