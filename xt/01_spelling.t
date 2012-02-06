@@ -22,3 +22,4 @@ Syohei YOSHIDA
 syohex
 gmail
 App::trigger
+ptrigger
