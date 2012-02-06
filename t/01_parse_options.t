@@ -38,4 +38,14 @@ subtest 'help option' => sub {
     like $@, qr/Usage/, 'long help option';
 };
 
+subtest 'specify file' => sub {
+    $app->parse_options(qw/-c myptrigger --tail myapp.log/);
+    is $app->{file}, 'myapp.log', 'specify file';
+
+    delete $app->{file};
+
+    $app->parse_options(qw/-c myptrigger --tail/);
+    ok !defined($app->{file}), 'not specify file(use STDIN)';
+};
+
 done_testing;
