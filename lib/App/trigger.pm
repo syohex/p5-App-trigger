@@ -173,6 +173,10 @@ sub _load_config_file {
     }
 
     my $conf = do $config_file or die "Can't load '$config_file' $!";
+    unless (ref $conf && ref $conf eq 'HASH') {
+        Carp::croak("Configration file should return HashRef");
+    }
+
     $self->_validate_config($conf);
 }
 
@@ -182,6 +186,10 @@ sub _validate_config {
     my %config;
     while ( my ($name, $val) = each %{$conf} ) {
         my $param = {};
+
+        unless (ref $val && ref $val eq 'HASH') {
+            Carp::croak("Each parameter should be HashRef");
+        }
 
         my $regexp = $val->{regexp};
         unless (defined $regexp) {
