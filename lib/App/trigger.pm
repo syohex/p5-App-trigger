@@ -47,7 +47,7 @@ sub _create_handle {
             $self->{cv}->send("$fatal: $message");
         },
         on_eof => sub {
-            if ($self->{tail}) {
+            if ($self->{follow}) {
                 $self->{handle}->destroy;
                 undef $self->{handle};
                 $self->{handle} = $self->_create_handle();
@@ -134,8 +134,9 @@ sub parse_options {
     local @ARGV = @argv;
 
     Getopt::Long::GetOptions(
-        "c|config=s" => \$self->{config},
-        "t|tail"     => \$self->{tail},
+        "c|config=s" => \$self->{config_file},
+        "m|match=s@" => \$self->{matches},
+        "f|follow"   => \$self->{follow},
         "h|help"     => \my $help,
     );
 
@@ -157,7 +158,7 @@ Usage: $0 [options]
 
 Options:
   -c,--config        Specify configuration file.
-  -t,--tail          Behave like 'tail -f'.
+  -f,--follow        Behave like 'tail -f'.
   -h,--help          Show this message.
 ...
 }
