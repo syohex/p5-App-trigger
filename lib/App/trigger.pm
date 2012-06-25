@@ -33,7 +33,7 @@ sub _wait_children_finished {
     my $self = shift;
 
     while (1) {
-        for my $pid (keys $self->{processes}) {
+        for my $pid (keys %{$self->{processes}}) {
             if (waitpid($pid, &POSIX::WNOHANG) == -1) {
                 delete $self->{processes}->{$pid};
             }
