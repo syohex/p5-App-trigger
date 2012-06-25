@@ -2,8 +2,6 @@
 use strict;
 use warnings;
 
-use lib qw(../lib);
-
 use App::trigger;
 
 my $app = App::trigger->new;
@@ -20,9 +18,20 @@ ptrigger - trigger action by reading file or standard input
 
 =head1 SYNOPSIS
 
-    % ptrigger --config=myptrigger --tail some_app.log
+    # Using configuration file
+    % ptrigger --config=myptrigger some_app.log
 
-    % some_app 2>&1 | ptrigger --tail # read from STDIN
+    # Read from STDIN
+    % cat some_app.log | ptrigger --config=myptrigger
+
+    # like 'tail -f'
+    % ptrigger --follow --config=myptrigger some_access.log
+
+    # Using command line options
+    % ptrigger --match '(?i:error)=red:firefox someurl' some.log
+
+    # Specified some patterns with command line options
+    % ptrigger -m 'apple:red' -m 'melon:green' -m 'lemon:yellow' fruit.log
 
 =head1 DESCRIPTION
 
@@ -38,7 +47,22 @@ You can specify the following options
 
 Specify configuration file.
 
-=item -t, --tail
+=item -m, --match pattern[:color_attr1,...][action]
+
+Specify match pattern, its colors, and action.
+
+C<pattern> is just a Perl regex.
+
+B<NOTE>: If you use colon in C<pattern>, you should use octal notation(\072)
+or hexadecimal notation(\x{3a}) of B<:>.
+Because colon is separator of this option.
+
+Default color is 'reverse'. You can specify multiple color attributes
+by separateing comma.
+
+Default action is "do nothing". C<ptrigger> execs C<action> as command.
+
+=item -f, --follow
 
 Behave like B<tail -f>.
 
@@ -52,35 +76,41 @@ Display the help message.
 
 The configuration file is just a perl file. You can specify it
 with -c, or --config command line option.
-If you omit -c, or --config option, C<ptrigger> use C<~/.ptrigger>.
 
 It should return HashRef. Value of Hash should be HashRef too.
-It should has C<regexp> mandatory parameter and
+It should has C<pattern> mandatory parameter and
 it can have C<color> and C<action> optional parameters.
 
-C<regexp> parameter should be string or reference of C<Regexp>.
+C<pattern> parameter should be string or reference of C<Regexp>.
 
 C<color> paramter should be string or C<ArrayRef>.
 C<color> parameter is passed C<Term::ANSIColor::color> function,
 so you can set this parameter same as C<Term::ANSIColor>.
 
-C<action> parameter should be C<CodeRef> or string.
-If you set string to C<action> parameter, C<ptrigger> execute it
-as command with C<exec> function.
+C<action> parameter should be C<CodeRef> or string. Matched
+string is passed C<CodeRef> as first aruments, subsequent arguments
+are captured strings. If you set string to C<action> parameter,
+C<ptrigger> execute it as command with C<exec> function.
 
 For example:
 
     +{
+        # ptrigger colors string matched, then execs action string
+        # as command, if input matches this pattern.
         Error => {
-            regexp => qr/[\w:]Error/,
-            color  => ['yellow', 'bold'],
-            action => "notify-send Error Trouble"
+            pattern => qr/[\w:]Error/,
+            color   => ['yellow', 'bold'],
+            action  => "notify-send Error Trouble"
         },
 
+        # ptrigger calls action coderef if input matches this pattern.
         'Server Error' => {
-            regexp => qr/Internal Server Error/,
-            action => sub {
-                ....
+            pattern => qr/Server Error: (\S+)/,
+            action  => sub {
+                my ($matched_string, @captured_strings) = @_;
+
+                # do something
+                ...
             };
         },
     };
