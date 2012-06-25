@@ -18,12 +18,23 @@ subtest 'config option' => sub {
     is $app->{config_file}, 'longconfig', 'long config option';
 };
 
-subtest 'tail option' => sub {
-    $app->parse_options(qw/-t/);
-    ok $app->{tail}, 'short tail option';
+subtest 'match option' => sub {
+    $app->parse_options(qw/-m shortopt/);
+    is_deeply $app->{matches}, ['shortopt'], 'short match option';
 
-    $app->parse_options(qw/--tail/);
-    ok $app->{tail}, 'long tail option';
+    $app->parse_options(qw/--match longopt/);
+    is_deeply $app->{matches}, ['longopt'], 'long match option';
+
+    $app->parse_options(qw/-m apple=red -m banana=yellow/);
+    is scalar @{$app->{matches}}, 2, 'specify multiple match option';
+};
+
+subtest 'follow option' => sub {
+    $app->parse_options(qw/-f/);
+    ok $app->{follow}, 'short follow option';
+
+    $app->parse_options(qw/--follow/);
+    ok $app->{follow}, 'long follow option';
 };
 
 subtest 'help option' => sub {
@@ -39,12 +50,12 @@ subtest 'help option' => sub {
 };
 
 subtest 'specify file' => sub {
-    $app->parse_options(qw/-c myptrigger --tail myapp.log/);
+    $app->parse_options(qw/-c myptrigger --follow myapp.log/);
     is $app->{file}, 'myapp.log', 'specify file';
 
     delete $app->{file};
 
-    $app->parse_options(qw/-c myptrigger --tail/);
+    $app->parse_options(qw/-c myptrigger --follow/);
     ok !defined($app->{file}), 'not specify file(use STDIN)';
 };
 
