@@ -12,10 +12,10 @@ can_ok $app, 'parse_options';
 
 subtest 'config option' => sub {
     $app->parse_options(qw/-c shortconfig/);
-    is $app->{config}, 'shortconfig', 'short config option';
+    is $app->{config_file}, 'shortconfig', 'short config option';
 
     $app->parse_options(qw/--config longconfig/);
-    is $app->{config}, 'longconfig', 'long config option';
+    is $app->{config_file}, 'longconfig', 'long config option';
 };
 
 subtest 'tail option' => sub {
