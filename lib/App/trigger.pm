@@ -73,7 +73,6 @@ sub _create_handle {
                     while ( my ($name, $conf) = each %{$self->{config}} ) {
                         $self->_match_line($conf, $orig_line, \$line);
                     }
-
                     print "$line\n";
                 },
             );
@@ -81,15 +80,58 @@ sub _create_handle {
     );
 }
 
+sub _load_match_options {
+    my $self = shift;
+
+    my %config;
+    my $index = 0;
+    for my $match_opt ( @{$self->{matches}} ) {
+        my ($pattern, $color, $action) = split ':', $match_opt, 3;
+
+        unless (defined $color) {
+            $color = 'reverse';
+        }
+
+        if (defined $action) {
+            $action = _wrap_action_around_coderef($action);
+        }
+
+        my @color_params = split ',', $color;
+        for my $color_param (@color_params) {
+            _validate_color($color_param);
+        }
+
+        $config{ "_matchopt_" . $index } = {
+            pattern => qr/$pattern/,
+            color   => "@color_params",
+            action  => $action,
+        };
+        $index++;
+    }
+
+    my $old_conf = $self->{config} || {};
+    $self->{config} = { (%{$old_conf}, %config) };
+}
+
 sub run {
     my $self = shift;
 
-    $self->_load_config_file;
+    if ($self->{config_file}) {
+        $self->_load_config_file;
+    }
+
+    if ($self->{matches}) {
+        $self->_load_match_options;
+    }
+
+    if (scalar(keys %{$self->{config}}) == 0) {
+        die "No pattern specified\n";
+    }
 
     my $fh;
     if ($self->{file}) {
         unless (-e $self->{file}) {
-            Carp::croak("$self->{file} is not exist.");
+            Carp::croak("'$self->{file}' is not existed");
         }
 
         open $self->{fh}, '<', $self->{file} or die "Can't open $self->{file}: $!";
@@ -105,18 +147,26 @@ sub run {
     $self->{handle} = $self->_create_handle();
 
     $self->{cv}->recv;
-    _wait_children_finished();
+    $self->_wait_children_finished;
+
+    close $self->{fh} if $self->{file};
 }
 
 sub _match_line {
     my ($self, $conf, $orig_line, $line_ref) = @_;
 
-    my $regexp = $conf->{regexp};
-    if ($orig_line =~ $regexp) {
-        if ($conf->{color}) {
+    my $pattern = $conf->{pattern};
+    my $already_colored;
+
+    while ($orig_line =~ m{$pattern}g) {
+        my $matched_string = $&;
+        my @captured = $matched_string =~ m{$pattern}g;
+
+        if (!$already_colored && $conf->{color}) {
             my $color = Term::ANSIColor::color($conf->{color});
             my $reset = Term::ANSIColor::color('reset');
-            ${$line_ref} =~ s{($regexp)}{${color}${1}${reset}};
+            ${$line_ref} =~ s!($pattern)!${color}${1}${reset}!g;
+            $already_colored = 1;
         }
 
         if ($conf->{action}) {
@@ -127,10 +177,12 @@ sub _match_line {
                 local %SIG;
 
                 # Child process
-                $conf->{action}->();
+                $conf->{action}->($matched_string, @captured);
+##                print "finish: $$ \n";
                 exit 0;
             } else {
                 # Parent process
+                $self->{processes}->{$pid} = 1;
             }
         }
     }
@@ -174,11 +226,10 @@ Options:
 sub _load_config_file {
     my $self = shift;
 
-    my $default_config = File::Spec->catfile($ENV{HOME}, ".ptrigger");
-    my $config_file = $self->{config} || $default_config;
+    my $config_file = $self->{config_file};
 
     unless (-e $config_file) {
-        Carp::croak("Configuration files '$config_file' is not exist");
+        Carp::croak("Config file '$config_file' is not existed");
     }
 
     my $conf = do $config_file or die "Can't load '$config_file' $!";
@@ -200,17 +251,17 @@ sub _validate_config {
             Carp::croak("Each parameter should be HashRef");
         }
 
-        my $regexp = $val->{regexp};
-        unless (defined $regexp) {
-            Carp::croak("'$name' does not have 'regexp' paramter");
+        my $pattern = $val->{pattern};
+        unless (defined $pattern) {
+            Carp::croak("'$name' does not have 'pattern' paramter");
         }
 
-        if (ref $regexp eq 'Regexp') {
-            $param->{regexp} = $regexp;
-        } elsif (!ref $regexp) {
-            $param->{regexp} = qr/$regexp/;
+        if (ref $pattern eq 'Regexp') {
+            $param->{pattern} = $pattern;
+        } elsif (!ref $pattern) {
+            $param->{pattern} = qr/$pattern/;
         } else {
-            Carp::croak("'regexp' should be 'Regexp' or String");
+            Carp::croak("'pattern' should be 'Regexp' or String");
         }
 
         my $color = $val->{color};
@@ -225,9 +276,7 @@ sub _validate_config {
             }
 
             for my $color_param (@color_params) {
-                unless (exists $Term::ANSIColor::ATTRIBUTES{$color_param}) {
-                    Carp::croak("'$color_param' is invalid color parameter");
-                }
+                _validate_color($color_param);
             }
 
             $param->{color} = "@color_params";
@@ -236,12 +285,9 @@ sub _validate_config {
         my $action = $val->{action};
         if (defined $action) {
             if ( ref $action eq 'CODE') {
-                $param->{action} = $action
+                $param->{action} = $action;
             } elsif ( !ref $action ) {
-                my @cmd = split /\s/, $action;
-                $param->{action} = sub {
-                    exec @cmd;
-                };
+                $param->{action} = _wrap_action_around_coderef($action);
             } elsif ( ref $action ne 'CODE' ) {
                 Carp::croak("'action' paramter should be CodeRef or String");
             }
@@ -255,6 +301,21 @@ sub _validate_config {
     }
 
     $self->{config} = \%config;
+}
+
+sub _wrap_action_around_coderef {
+    my @cmd = split /\s/, $_[0];
+    return sub {
+        exec @cmd;
+    };
+}
+
+sub _validate_color {
+    my $color_attr = shift;
+
+    unless (exists $Term::ANSIColor::ATTRIBUTES{$color_attr}) {
+        Carp::croak("'$color_attr' is invalid color parameter");
+    }
 }
 
 1;
