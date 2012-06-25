@@ -30,8 +30,16 @@ sub _reaper {
 }
 
 sub _wait_children_finished {
-    while (waitpid(-1, &POSIX::WNOHANG) > 0) {
-        ;
+    my $self = shift;
+
+    while (1) {
+        for my $pid (keys $self->{processes}) {
+            if (waitpid($pid, &POSIX::WNOHANG) == -1) {
+                delete $self->{processes}->{$pid};
+            }
+        }
+
+        last if scalar keys %{$self->{processes}} == 0;
     }
 }
 
