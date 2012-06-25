@@ -21,7 +21,7 @@ subtest 'error test' => sub {
             },
         });
     };
-    like $@, qr/does not have 'regexp'/, "not spcifiy 'regexp' parameter";
+    like $@, qr/does not have 'pattern'/, "not spcifiy 'pattern' parameter";
 };
 
 done_testing;
