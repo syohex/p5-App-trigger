@@ -10,14 +10,14 @@ my $app = App::trigger->new;
 
 subtest 'error test' => sub {
     my $conf = create_configfile(['test', 'error']);
-    $app->{config} = $conf->filename;
+    $app->{config_file} = $conf->filename;
     eval {
         $app->_load_config_file;
     };
     like $@, qr/should return HashRef/, 'invalid configuration file';
 
 
-    $app->{config} = 'not_exist.ptrigger';
+    $app->{config_file} = 'not_exist.ptrigger';
     eval {
         $app->_load_config_file;
     };
