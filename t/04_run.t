@@ -59,7 +59,7 @@ subtest 'callback argument' => sub {
             action  => sub {
                 my ($matched, $cap1, $cap2) = @_;
                 open my $fh, ">>", $tmpname or die "Can't open file: $!";
-                flock $fh, LOCK_EX or die "Can't flock file: $!";warn "tms1\n";
+                flock $fh, LOCK_EX or die "Can't flock file: $!";
                 if ($matched eq "a12cdef" && $cap1 eq "12" && $cap2 eq "cdef") {
                     print {$fh} "argument_ok\n";
                 }
@@ -74,7 +74,7 @@ subtest 'callback argument' => sub {
                 my ($matched, $cap1) = @_;
 
                 open my $fh, ">>", $tmpname or die "Can't open file: $!";
-                flock $fh, LOCK_EX or die "Can't flock file: $!";warn "tms2\n";
+                flock $fh, LOCK_EX or die "Can't flock file: $!";
                 if ($matched eq "99z" && $cap1 eq "z") {
                     print {$fh} "argument_ok\n";
                 }
