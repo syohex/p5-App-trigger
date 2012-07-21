@@ -91,7 +91,7 @@ And C<ptrigger> supports following shorted color parameters.
     'bo'  => 'bold'
     'it'  => 'italic'
     'un'  => 'underline'
-    're'  => 'reverse'
+    'rev' => 'reverse'
     'bli' => 'blink'
     're'  => 'red'
     'bl'  => 'blue'

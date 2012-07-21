@@ -101,7 +101,7 @@ sub _load_match_options {
 
         $config{ "_matchopt_" . $index } = {
             pattern => qr/$pattern/,
-            color   => "@color_params",
+            color   => "@valid_colors",
             action  => $action,
         };
         $index++;
@@ -306,7 +306,7 @@ sub _wrap_action_around_coderef {
 }
 
 my %color_shortend = (
-    bo => 'bold', it => 'italic', un => 'underline', re => 'reverse',
+    bo => 'bold', it => 'italic', un => 'underline', rev => 'reverse',
     bli => 'blink',
 
     re => 'red', bl => 'blue', gr => 'green', ye => 'yellow',
