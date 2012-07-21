@@ -86,6 +86,27 @@ C<pattern> parameter should be string or reference of C<Regexp>.
 C<color> paramter should be string or C<ArrayRef>.
 C<color> parameter is passed C<Term::ANSIColor::color> function,
 so you can set this parameter same as C<Term::ANSIColor>.
+And C<ptrigger> supports following shorted color parameters.
+
+    'bo'  => 'bold'
+    'it'  => 'italic'
+    'un'  => 'underline'
+    're'  => 'reverse'
+    'bli' => 'blink'
+    're'  => 'red'
+    'bl'  => 'blue'
+    'gr'  => 'green'
+    'ye'  => 'yellow'
+    'ma'  => 'magenta'
+    'cy'  => 'cyan'
+    'wh'  => 'white'
+    'ore' => 'on_red'
+    'obl' => 'on_blue'
+    'ogr' => 'on_green'
+    'oye' => 'on_yellow'
+    'oma' => 'on_magenta'
+    'ocy' => 'on_cyan'
+    'owh' => 'on_white'
 
 C<action> parameter should be C<CodeRef> or string. Matched
 string is passed C<CodeRef> as first aruments, subsequent arguments
