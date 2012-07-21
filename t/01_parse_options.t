@@ -25,7 +25,7 @@ subtest 'match option' => sub {
     $app->parse_options(qw/--match longopt/);
     is_deeply $app->{matches}, ['longopt'], 'long match option';
 
-    $app->parse_options(qw/-m apple=red -m banana=yellow/);
+    $app->parse_options(qw/-m apple:red -m banana:yellow/);
     is scalar @{$app->{matches}}, 2, 'specify multiple match option';
 };
 

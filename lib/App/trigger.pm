@@ -97,9 +97,7 @@ sub _load_match_options {
         }
 
         my @color_params = split ',', $color;
-        for my $color_param (@color_params) {
-            _validate_color($color_param);
-        }
+        my @valid_colors = _validate_colors(@color_params);
 
         $config{ "_matchopt_" . $index } = {
             pattern => qr/$pattern/,
@@ -275,11 +273,8 @@ sub _validate_config {
                 Carp::croak("'color' paramter should be ArrayRef or String");
             }
 
-            for my $color_param (@color_params) {
-                _validate_color($color_param);
-            }
-
-            $param->{color} = "@color_params";
+            my @valid_colors = _validate_colors(@color_params);
+            $param->{color} = "@valid_colors";
         }
 
         my $action = $val->{action};
@@ -310,12 +305,33 @@ sub _wrap_action_around_coderef {
     };
 }
 
-sub _validate_color {
-    my $color_attr = shift;
+my %color_shortend = (
+    bo => 'bold', it => 'italic', un => 'underline', re => 'reverse',
+    bli => 'blink',
 
-    unless (exists $Term::ANSIColor::ATTRIBUTES{$color_attr}) {
-        Carp::croak("'$color_attr' is invalid color parameter");
+    re => 'red', bl => 'blue', gr => 'green', ye => 'yellow',
+    ma => 'magenta', cy => 'cyan', wh => 'white',
+
+    ore => 'on_red', obl => 'on_blue', ogr => 'on_green', oye => 'on_yellow',
+    oma => 'on_magenta', ocy => 'on_cyan', owh => 'on_white',
+);
+
+sub _validate_colors {
+    my @color_attrs = @_;
+
+    my @validate_colors;
+    for my $attr (@color_attrs) {
+        my $formal_attr = exists $color_shortend{$attr}
+                                 ? $color_shortend{$attr} : $attr;
+
+        unless (exists $Term::ANSIColor::ATTRIBUTES{$formal_attr}) {
+            Carp::croak("'$formal_attr' is invalid color parameter");
+        }
+
+        push @validate_colors, $formal_attr;
     }
+
+    return @validate_colors;
 }
 
 1;

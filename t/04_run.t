@@ -117,4 +117,13 @@ subtest 'no target file' => sub {
     like $@, qr/is not existed/, 'target file is not found';
 };
 
+subtest 'valid color attribute' => sub {
+    my $app = App::trigger->new;
+    $app->parse_options(qw/-m pattern:greeen/);
+    eval {
+        $app->run;
+    };
+    like $@, qr/is invalid color parameter/, 'using invalid color parameter';
+};
+
 done_testing;
