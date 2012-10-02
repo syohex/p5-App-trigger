@@ -62,6 +62,18 @@ by separateing comma.
 
 Default action is "do nothing". C<ptrigger> execs C<action> as command.
 
+=item -g, --grep
+
+Print only line matched
+
+=item -b, --bold
+
+Add 'bold' attribute to matched string
+
+=item -r, --random
+
+Colorized randomly
+
 =item -f, --follow
 
 Behave like B<tail -f>.

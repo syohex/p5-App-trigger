@@ -11,9 +11,14 @@ use Term::ANSIColor ();
 use AnyEvent ();
 use AnyEvent::Handle ();
 
+use List::Util qw/shuffle/;
+
 use 5.008_001;
 
 our $VERSION = '0.01';
+
+my @random_colors = shuffle qw/red green yellow blue magenta cyan/;
+my $random_index  = 0;
 
 sub new {
     my $class = shift;
@@ -70,10 +75,15 @@ sub _create_handle {
                     my ($handle, $line) = @_;
 
                     my $orig_line = $line;
+                    my $matched;
                     while ( my ($name, $conf) = each %{$self->{config}} ) {
-                        $self->_match_line($conf, $orig_line, \$line);
+                        if ($self->_match_line($conf, $orig_line, \$line)) {
+                            $matched = 1;
+                        }
                     }
-                    print "$line\n";
+                    if (!$self->{grep} || ($self->{grep} && $matched)) {
+                        print "$line\n";
+                    }
                 },
             );
         },
@@ -88,7 +98,10 @@ sub _load_match_options {
     for my $match_opt ( @{$self->{matches}} ) {
         my ($pattern, $color, $action) = split ':', $match_opt, 3;
 
-        unless (defined $color) {
+        if ($self->{random}) {
+            my $index = $random_index++ % scalar @random_colors;
+            $color = $random_colors[$index];
+        } elsif (! defined $color) {
             $color = 'reverse';
         }
 
@@ -97,6 +110,7 @@ sub _load_match_options {
         }
 
         my @color_params = split ',', $color;
+        push @color_params, 'bold' if $self->{bold};
         my @valid_colors = _validate_colors(@color_params);
 
         $config{ "_matchopt_" . $index } = {
@@ -156,7 +170,10 @@ sub _match_line {
     my $pattern = $conf->{pattern};
     my $already_colored;
 
+    my $matched;
     while ($orig_line =~ m{$pattern}g) {
+        $matched = 1;
+
         my $matched_string = $&;
         my @captured = $matched_string =~ m{$pattern}g;
 
@@ -176,7 +193,6 @@ sub _match_line {
 
                 # Child process
                 $conf->{action}->($matched_string, @captured);
-##                print "finish: $$ \n";
                 exit 0;
             } else {
                 # Parent process
@@ -184,6 +200,8 @@ sub _match_line {
             }
         }
     }
+
+    return $matched;
 }
 
 sub parse_options {
@@ -193,6 +211,9 @@ sub parse_options {
 
     Getopt::Long::GetOptions(
         "c|config=s" => \$self->{config_file},
+        "g|grep"     => \$self->{grep},
+        "b|bold"     => \$self->{bold},
+        "r|random"   => \$self->{random},
         "m|match=s@" => \$self->{matches},
         "f|follow"   => \$self->{follow},
         "h|help"     => \my $help,
@@ -215,6 +236,9 @@ sub usage {
 Usage: $0 [options]
 
 Options:
+  -g,--grep          print only line matched.
+  -b,--bold          add bold attribute to matched string
+  -r,--random        Colorize randomly
   -c,--config        Specify configuration file.
   -f,--follow        Behave like 'tail -f'.
   -h,--help          Show this message.

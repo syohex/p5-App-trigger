@@ -18,6 +18,30 @@ subtest 'config option' => sub {
     is $app->{config_file}, 'longconfig', 'long config option';
 };
 
+subtest 'grep option' => sub {
+    $app->parse_options(qw/-g/);
+    ok $app->{grep}, 'short grep option';
+
+    $app->parse_options(qw/--grep/);
+    ok $app->{grep}, 'long grep option';
+};
+
+subtest 'bold option' => sub {
+    $app->parse_options(qw/-b/);
+    ok $app->{bold}, 'short bold option';
+
+    $app->parse_options(qw/--bold/);
+    ok $app->{bold}, 'long bold option';
+};
+
+subtest 'random option' => sub {
+    $app->parse_options(qw/-r/);
+    ok $app->{random}, 'short random option';
+
+    $app->parse_options(qw/--random/);
+    ok $app->{random}, 'long random option';
+};
+
 subtest 'match option' => sub {
     $app->parse_options(qw/-m shortopt/);
     is_deeply $app->{matches}, ['shortopt'], 'short match option';
