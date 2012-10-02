@@ -98,11 +98,13 @@ sub _load_match_options {
     for my $match_opt ( @{$self->{matches}} ) {
         my ($pattern, $color, $action) = split ':', $match_opt, 3;
 
-        if ($self->{random}) {
-            my $index = $random_index++ % scalar @random_colors;
-            $color = $random_colors[$index];
-        } elsif (! defined $color) {
-            $color = 'reverse';
+        unless (defined $color) {
+            if ($self->{random}) {
+                my $index = $random_index++ % scalar @random_colors;
+                $color = $random_colors[$index];
+            } else {
+                $color = 'reverse';
+            }
         }
 
         if (defined $action) {
